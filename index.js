@@ -2,20 +2,13 @@ require("dotenv").config();
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
+const nodemailer = require("nodemailer");
 
-const { GMAIL_USERNAME, GMAIL_PASS } = process.env;
+const { USERNAME, PASS } = process.env;
 const PORT = 4200;
 
 const app = express();
 
-app.use(function (req, res, next) {
-	res.header("Access-Control-Allow-Origin", req.headers.origin);
-	res.header(
-		"Access-Control-Allow-Headers",
-		"Origin, X-Requested-With, Content-Type, Accept"
-	);
-	next();
-});
 const corsOptions = {
 	origin: [process.env.FRONT_URI, process.env.REXP],
 	credentials: true,
@@ -25,17 +18,33 @@ app.use(cors(corsOptions));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-app.post("/message", (req, res) => {
-	console.log(req.body);
-	// let transporter = nodemailer.createTransport({
-	//     host: "smtp.ethereal.email",
-	//     port: 587,
-	//     secure: false, // true for 465, false for other ports
-	//     auth: {
-	//       user: testAccount.user, // generated ethereal user
-	//       pass: testAccount.pass, // generated ethereal password
-	//     },
-	//   });
+app.post("/message", async (req, res) => {
+	const { name, email, message } = req.body;
+	try {
+		const transporter = nodemailer.createTransport({
+			host: "smtp.jimmylam.tech",
+			port: 465,
+			secure: false, // true for 465, false for other ports
+			auth: {
+				user: USERNAME, // generated ethereal user
+				pass: PASS, // generated ethereal password
+			},
+		});
+		const info = {
+			from: `"Contact Message" <${USERNAME}>`, // sender address
+			to: `JimmyLam045@gmail.com`, // list of receivers
+			cc: `${email}`,
+			subject: `Contact form message from ${name}`, // Subject line
+			text: message,
+		};
+
+		const sendInfo = await transporter.sendMail(info);
+		console.log(sendInfo);
+		res.status(200);
+	} catch (error) {
+		console.log(error);
+		res.status(500);
+	}
 });
 
 app.listen(PORT, () => {
